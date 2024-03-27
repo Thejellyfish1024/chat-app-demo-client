@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { useState } from "react"
 import { io } from "socket.io-client";
 import useAxiosPublic from "./hooks/useAxiosPublic";
 import useAllChats from "./hooks/useAllMessages";
+import { AuthContext } from "./provider/AuthProvider";
 
 const socket = io.connect("http://localhost:3000");
 
@@ -10,20 +11,23 @@ function App() {
   const [message, setMessage] = useState("");
   const axiosPublic = useAxiosPublic();
   const { data: allMessages, refetch } = useAllChats();
-
+  const { user } = useContext(AuthContext);
   // socket with useEffect
-  
+
   useEffect(() => {
     socket.on("receive-message", (data) => {
-      console.log(data);
-      if(data){
+      // console.log(data);
+      if (data) {
         refetch();
       }
     });
   }, [socket]);
 
   const handleSend = async () => {
-    const newMessage = { message: message }
+    const newMessage = {
+      message: message,
+      sender: user?.email
+    }
     console.log(message);
     const res = await axiosPublic.post("/new-chat", newMessage)
     console.log(res?.data);
@@ -48,7 +52,18 @@ function App() {
         <div className="font-medium space-y-2 mt-4">
           {/* {messageReceived} */}
           {
-            allMessages?.map(message => <p key={message?._id}>{message?.message}</p>)
+            allMessages?.map(message => <div key={message?._id}>
+              {message?.sender === user?.email ?
+                <p className="">
+                  <span className="text-white rounded-full py-1 px-4 w-fit bg-green-500 text-end">{message?.message}</span>
+                </p>
+                :
+                <p className="text-end">
+                  <span className="text-white rounded-full py-1 px-4 w-fit bg-red-500 text-end">{message?.message}</span>
+                </p>
+              }
+
+            </div>)
           }
         </div>
       </div>
